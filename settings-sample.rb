@@ -29,6 +29,8 @@ DAYS_OF_ARCHIVES = 7
 #    Archive will be named in the format: db-table_name-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
 MYSQL_DBS = ['application_production', 'wordpress', 'something_else']
+# For backup all databases comment the MYSQL_DBS and comment out the MYSQL_ALL
+MYSQL_ALL = true
 MYSQL_DB = 'localhost'
 MYSQL_USER = 'XXXXX'
 MYSQL_PASS = 'XXXXX'
