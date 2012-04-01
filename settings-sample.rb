@@ -1,8 +1,8 @@
 # EXECUTABLES
 MYSQLDUMP_CMD = '/usr/bin/mysqldump'
 MONGODUMP_CMD = '/usr/bin/mongodump'
-GZIP_CMD = '/usr/bin/gzip'
-TAR_CMD = '/usr/bin/tar'
+GZIP_CMD = '/bin/gzip'
+TAR_CMD = '/bin/tar'
 CP_CMD = '/bin/cp'
 
 # PATHS
