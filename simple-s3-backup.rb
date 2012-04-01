@@ -9,6 +9,7 @@ end
 include AWS::S3
 
 require 'settings'
+require 'sequel'
 
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
@@ -43,6 +44,22 @@ if defined?(MYSQL_DBS)
     S3Object.store(db_filename, open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
   end
 end
+
+# Perform recursive MySQL backup
+if defined?(MYSQL_ALL)
+  connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost'
+  connection['show databases;'].each do |db|
+    db_filename = "db-#{db[:Database]}-#{timestamp}.gz"
+    if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
+      password_param = "-p#{MYSQL_PASS}"
+    else
+      password_param = ""
+    end
+    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db[:Database]} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
+    S3Object.store(db_filename, open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
+  end
+end
+
 
 # Perform MongoDB backups
 if defined?(MONGO_DBS)
