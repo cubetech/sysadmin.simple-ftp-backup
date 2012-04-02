@@ -77,7 +77,7 @@ end
 if defined?(DIRECTORIES)
   DIRECTORIES.each do |name, dir|
     dir_filename = "dir-#{name}-#{timestamp}.tgz"
-    system("cd #{dir} && #{TAR_CMD} -czf #{full_tmp_path}/#{dir_filename} .")
+    system("cd #{dir} && #{TAR_CMD} --exclude='#{DIRECTORIES_EXCLUDE}' -czf #{full_tmp_path}/#{dir_filename} .")
     S3Object.store(dir_filename, open("#{full_tmp_path}/#{dir_filename}"), S3_BUCKET)
   end
 end
