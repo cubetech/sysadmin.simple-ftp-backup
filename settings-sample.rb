@@ -22,15 +22,15 @@ AWS::S3::Base.establish_connection!(
 S3_BUCKET = 'my.unique.name'
 
 # SPECIFY HOW MANY DAYS OF ARCHIVES YOU WANT TO KEEP
-DAYS_OF_ARCHIVES = 7
+DAYS_OF_ARCHIVES = 30
 
 # MYSQL CONFIG
 #  * Put the MySQL table names that you want to back up in the MYSQL_DBS array below
 #    Archive will be named in the format: db-table_name-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
-MYSQL_DBS = ['application_production', 'wordpress', 'something_else']
+# MYSQL_DBS = ['application_production', 'wordpress', 'something_else']
 # For backup all databases comment the MYSQL_DBS and comment out the MYSQL_ALL
-# MYSQL_ALL = true
+MYSQL_ALL = true
 MYSQL_DB = 'localhost'
 MYSQL_USER = 'XXXXX'
 MYSQL_PASS = 'XXXXX'
@@ -39,8 +39,8 @@ MYSQL_PASS = 'XXXXX'
 #  * Put the MongoDB table names that you want to back up in the MONGO_DBS array below
 #    Archive will be named in the format: mdb-table_name-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
-MONGO_DBS = ['mongo_db_one', 'mongo_db_test']
-MONGO_HOST = 'localhost'
+# MONGO_DBS = ['mongo_db_one', 'mongo_db_test']
+# MONGO_HOST = 'localhost'
 
 # DIRECTORY BACKUP CONFIG
 #  * Add hash pair for each directory you want to backup
@@ -48,8 +48,8 @@ MONGO_HOST = 'localhost'
 #    Archive will be named in the format: dir-name_for_backup-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
 DIRECTORIES = {
-  "important" => "/home/username/important",
-  "apache_logs" => "/etc/apache2/logs"
+  "userhome" => "/home/user",
+  "apacheconfig" => "/etc/httpd"
 }
 
 # SINGLE FILES CONFIG
@@ -57,7 +57,7 @@ DIRECTORIES = {
 #    in format: "name_for_backup" => [array of single files to backup]
 #    Archive will be named in the format: files-name_for_backup-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
-SINGLE_FILES = {
-  'important_configs' => ['/etc/hosts', '/etc/my.cnf'],
-  'other_configs' => ['/etc/syslog.conf', '/etc/smb.conf']
-}
+# SINGLE_FILES = {
+#   'important_configs' => ['/etc/hosts', '/etc/my.cnf'],
+#   'other_configs' => ['/etc/syslog.conf', '/etc/smb.conf']
+# }
