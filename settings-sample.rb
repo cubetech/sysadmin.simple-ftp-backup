@@ -51,8 +51,8 @@ DIRECTORIES = {
   "userhome" => "/home/user",
   "apacheconfig" => "/etc/httpd"
 }
-# You can set excludes. Split multiple excludes with a space (for ex. 'bla this *.jpg')
-DIRECTORIES_EXCLUDE = '*.old *zopectl'
+# You can set excludes in this array.
+DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
 
 # SINGLE FILES CONFIG
 #  * Add hash pair for each grouping of single files you want to backup
