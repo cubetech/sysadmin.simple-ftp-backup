@@ -50,12 +50,12 @@ MYSQL_PASS = 'XXXXX'
 #    in format: "name_for_backup" => "/actual/directory/name"
 #    Archive will be named in the format: dir-name_for_backup-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
-DIRECTORIES = {
-  "userhome" => "/home/user",
-  "apacheconfig" => "/etc/httpd"
-}
+# DIRECTORIES = {
+#   "userhome" => "/home/user",
+#   "apacheconfig" => "/etc/httpd"
+# }
 # You can set excludes in this array.
-DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
+# DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
 
 # SINGLE FILES CONFIG
 #  * Add hash pair for each grouping of single files you want to backup
