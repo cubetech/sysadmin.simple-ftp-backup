@@ -3,13 +3,12 @@
 # Add local directory to LOAD_PATH
 $LOAD_PATH.unshift File.expand_path(File.dirname(__FILE__))
 
-%w(rubygems aws/s3 fileutils).each do |lib|
+%w(rubygems aws/s3 fileutils sequel).each do |lib|
   require lib
 end
 include AWS::S3
 
 require 'settings'
-require 'sequel'
 
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
