@@ -29,32 +29,28 @@ end
 # Create tmp directory
 FileUtils.mkdir_p full_tmp_path
 
-# Perform MySQL backups
-if defined?(MYSQL_DBS)
-  MYSQL_DBS.each do |db|
-    db_filename = "db-#{db}-#{timestamp}.gz"
-    # allow check for a blank or non existent password
-    if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
-      password_param = "-p#{MYSQL_PASS}" 
-    else
-      password_param = ""
-    end
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
-    S3Object.store(db_filename, open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
+# Perform MySQL backup of all databases or specific ones
+if defined?(MYSQL_ALL or MYSQL_DBS)
+  # Build an array of databases to backup
+  if defined?(MYSQL_ALL)
+    connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
+    @databases = connection['show databases;'].collect { |db| db[:Database] }
+  elsif defined?(MYSQL_DBS)
+    @databases = MYSQL_DBS
   end
-end
+  # Fail if there are no databases to backup
+  raise "Error: There are no db's to backup." if @databases.empty?
 
-# Perform recursive MySQL backup
-if defined?(MYSQL_ALL)
-  connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost'
-  connection['show databases;'].each do |db|
-    db_filename = "db-#{db[:Database]}-#{timestamp}.gz"
+  @databases.each do |db|
+    db_filename = "db-#{db}-#{timestamp}.gz"
     if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
       password_param = "-p#{MYSQL_PASS}"
     else
       password_param = ""
     end
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db[:Database]} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
+    # Perform the mysqldump and compress the output to file
+    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
+    # Upload file to S3
     S3Object.store(db_filename, open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
   end
 end
