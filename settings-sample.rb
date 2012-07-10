@@ -6,7 +6,7 @@ TAR_CMD = '/bin/tar'
 CP_CMD = '/bin/cp'
 
 # PATHS
-TMP_BACKUP_PATH = 'temp' # Will be created (and removed) inside the directory where the script is installed
+TMP_BACKUP_PATH = '/tmp' # Will be created as parent for a temp directory before uploading.
 
 # use SSL to transmit backups to S3 (a good idea)
 USE_SSL = true

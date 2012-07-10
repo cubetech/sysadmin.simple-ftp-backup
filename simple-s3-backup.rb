@@ -12,7 +12,7 @@ require 'settings'
 
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
-full_tmp_path = File.join(File.expand_path(File.dirname(__FILE__)), TMP_BACKUP_PATH)
+full_tmp_path = File.join(TMP_BACKUP_PATH, "simple-s3-backup-" << timestamp)
 
 # Find/create the backup bucket
 if Service.buckets.collect{ |b| b.name }.include?(S3_BUCKET)
