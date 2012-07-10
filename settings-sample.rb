@@ -19,9 +19,12 @@ AWS::S3::Base.establish_connection!(
 )
 
 # SPECIFY S3 BUCKET
+#  * Note: Must be globally unique. Will automatically be created if it does not exist.
 S3_BUCKET = 'my.unique.name'
 
 # SPECIFY HOW MANY DAYS OF ARCHIVES YOU WANT TO KEEP
+#  * Warning: The expiration is performed on *all* objects in the bucket.
+#             If you use this script on multiple servers, use separate buckets for each.
 DAYS_OF_ARCHIVES = 30
 
 # MYSQL CONFIG
