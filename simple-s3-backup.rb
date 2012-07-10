@@ -49,7 +49,7 @@ if defined?(MYSQL_ALL or MYSQL_DBS)
       password_param = ""
     end
     # Perform the mysqldump and compress the output to file
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
+    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}")
     # Upload file to S3
     S3Object.store(db_filename, open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
   end

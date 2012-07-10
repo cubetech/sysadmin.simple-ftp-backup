@@ -5,6 +5,12 @@ GZIP_CMD = '/bin/gzip'
 TAR_CMD = '/bin/tar'
 CP_CMD = '/bin/cp'
 
+# COMPRESSION
+#  * Defines the compression factor of gzip. Must be a digit from 1-9. Lower numbers provide
+#    less compression but are faster, and vice versa. The default compression level is 6
+#    (that is, biased towards high compression at expense of speed).
+GZIP_STRENGTH = 6
+
 # PATHS
 TMP_BACKUP_PATH = '/tmp' # Will be created as parent for a temp directory before uploading.
 
