@@ -42,7 +42,7 @@ if defined?(MYSQL_ALL or MYSQL_DBS)
   raise "Error: There are no db's to backup." if @databases.empty?
 
   @databases.each do |db|
-    db_filename = "db-#{db}-#{timestamp}.gz"
+    db_filename = "db-#{db}-#{timestamp}.sql.gz"
     if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
       password_param = "-p#{MYSQL_PASS}"
     else
