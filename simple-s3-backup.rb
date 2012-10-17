@@ -82,7 +82,15 @@ if defined?(DIRECTORIES)
       excludes += "--exclude=\"#{de}\" "
     end
     system("cd #{dir} && #{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} .")
-    S3Object.store(dir_filename, open("#{full_tmp_path}/#{dir_filename}"), S3_BUCKET)
+    filesize = File.size("#{full_tmp_path}/#{dir_filename}").to_f / 1024000
+    if filesize > 4000
+      system("split -d -b 3900m #{full_tmp_path}/#{dir_filename} #{full_tmp_path}/#{dir_filename}.")
+      Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
+        S3Object.store(item, open("#{item}"), S3_BUCKET)
+      end
+    else
+      S3Object.store(dir_filename, open("#{full_tmp_path}/#{dir_filename}"), S3_BUCKET)
+    end
   end
 end
 
