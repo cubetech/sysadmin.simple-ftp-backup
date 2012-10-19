@@ -15,4 +15,4 @@ A simple Ruby script to back up MySQL database tables, MongoDB databases, full d
 
 **To do:**
 
-1. Split daily archives into separate directories in the bucket? Would be helpful for those with lots of files, and lots of days
+1. Amazon S3 multiple file upload
