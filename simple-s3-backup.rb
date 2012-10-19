@@ -33,7 +33,7 @@ FileUtils.mkdir_p full_tmp_path
 # Perform MySQL backups
 if defined?(MYSQL_DBS)
   MYSQL_DBS.each do |db|
-    db_filename = "db-#{db}-#{timestamp}.gz"
+    db_filename = "db-#{db}.gz"
     # allow check for a blank or non existent password
     if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
       password_param = "-p#{MYSQL_PASS}" 
@@ -41,7 +41,7 @@ if defined?(MYSQL_DBS)
       password_param = ""
     end
     system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
-    S3Object.store("mysqldb/#{db_filename}", open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
+    S3Object.store("mysqldb/#{timestamp}/#{db_filename}", open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
   end
 end
 
@@ -49,14 +49,14 @@ end
 if defined?(MYSQL_ALL)
   connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost'
   connection['show databases;'].each do |db|
-    db_filename = "db-#{db[:Database]}-#{timestamp}.gz"
+    db_filename = "db-#{db[:Database]}.gz"
     if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
       password_param = "-p#{MYSQL_PASS}"
     else
       password_param = ""
     end
     system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db[:Database]} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
-    S3Object.store("mysqldb/#{db_filename}", open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
+    S3Object.store("mysqldb/#{timestamp}/#{db_filename}", open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
   end
 end
 
@@ -66,9 +66,9 @@ if defined?(MONGO_DBS)
   mdb_dump_dir = File.join(full_tmp_path, "mdbs")
   FileUtils.mkdir_p mdb_dump_dir
   MONGO_DBS.each do |mdb|
-    mdb_filename = "mdb-#{mdb}-#{timestamp}.tgz"
+    mdb_filename = "mdb-#{mdb}.tgz"
     system("#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && cd #{mdb_dump_dir}/#{mdb} && #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} .")
-    S3Object.store("mongodb/#{mdb_filename}", open("#{full_tmp_path}/#{mdb_filename}"), S3_BUCKET)
+    S3Object.store("mongodb/#{timestamp}/#{mdb_filename}", open("#{full_tmp_path}/#{mdb_filename}"), S3_BUCKET)
   end
   FileUtils.remove_dir mdb_dump_dir
 end
@@ -76,7 +76,7 @@ end
 # Perform directory backups
 if defined?(DIRECTORIES)
   DIRECTORIES.each do |name, dir|
-    dir_filename = "dir-#{name}-#{timestamp}.tgz"
+    dir_filename = "dir-#{name}.tgz"
     excludes = ""
     DIRECTORIES_EXCLUDE.each do |de|
       excludes += "--exclude=\"#{de}\" "
@@ -88,10 +88,10 @@ if defined?(DIRECTORIES)
       system("rm -rf #{full_tmp_path}/#{dir_filename}")
       Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
         basename = File.basename(item)
-        S3Object.store("directories/#{basename}", open("#{item}"), S3_BUCKET)
+        S3Object.store("directories/#{timestamp}/#{basename}", open("#{item}"), S3_BUCKET)
       end
     else
-      S3Object.store("directories/#{dir_filename}", open("#{full_tmp_path}/#{dir_filename}"), S3_BUCKET)
+      S3Object.store("directories/#{timestamp}/#{dir_filename}", open("#{full_tmp_path}/#{dir_filename}"), S3_BUCKET)
     end
   end
 end
@@ -105,14 +105,14 @@ if defined?(SINGLE_FILES)
     FileUtils.mkdir_p files_tmp_path
 
     # Filename for files
-    files_filename = "files-#{name}-#{timestamp}.tgz"
+    files_filename = "files-#{name}.tgz"
 
     # Copy files to temp directory
     FileUtils.cp files, files_tmp_path
 
     # Create archive & copy to S3
     system("cd #{files_tmp_path} && #{TAR_CMD} -czf #{full_tmp_path}/#{files_filename} .")
-    S3Object.store("files/#{files_filename}", open("#{full_tmp_path}/#{files_filename}"), S3_BUCKET)
+    S3Object.store("files/#{timestamp}/#{files_filename}", open("#{full_tmp_path}/#{files_filename}"), S3_BUCKET)
 
     # Remove the temporary directory for the files
     FileUtils.remove_dir files_tmp_path
