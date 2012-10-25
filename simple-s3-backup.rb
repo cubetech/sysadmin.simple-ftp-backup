@@ -3,17 +3,16 @@
 # Add local directory to LOAD_PATH
 $LOAD_PATH.unshift File.expand_path(File.dirname(__FILE__))
 
-%w(rubygems aws/s3 fileutils).each do |lib|
+%w(rubygems aws/s3 fileutils sequel).each do |lib|
   require lib
 end
 include AWS::S3
 
 require 'settings'
-require 'sequel'
 
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
-full_tmp_path = File.join(File.expand_path(File.dirname(__FILE__)), TMP_BACKUP_PATH)
+full_tmp_path = File.join(TMP_BACKUP_PATH, "simple-s3-backup-" << timestamp)
 
 # Find/create the backup bucket
 if Service.buckets.collect{ |b| b.name }.include?(S3_BUCKET)
@@ -30,33 +29,29 @@ end
 # Create tmp directory
 FileUtils.mkdir_p full_tmp_path
 
-# Perform MySQL backups
-if defined?(MYSQL_DBS)
-  MYSQL_DBS.each do |db|
-    db_filename = "db-#{db}.gz"
-    # allow check for a blank or non existent password
-    if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
-      password_param = "-p#{MYSQL_PASS}" 
-    else
-      password_param = ""
-    end
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
-    S3Object.store("mysqldb/#{timestamp}/#{db_filename}", open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
+# Perform MySQL backup of all databases or specific ones
+if defined?(MYSQL_ALL or MYSQL_DBS)
+  # Build an array of databases to backup
+  if defined?(MYSQL_ALL)
+    connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
+    @databases = connection['show databases;'].collect { |db| db[:Database] }
+  elsif defined?(MYSQL_DBS)
+    @databases = MYSQL_DBS
   end
-end
+  # Fail if there are no databases to backup
+  raise "Error: There are no db's to backup." if @databases.empty?
 
-# Perform recursive MySQL backup
-if defined?(MYSQL_ALL)
-  connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost'
-  connection['show databases;'].each do |db|
-    db_filename = "db-#{db[:Database]}.gz"
+  @databases.each do |db|
+    db_filename = "db-#{db}-#{timestamp}.sql.gz"
     if defined?(MYSQL_PASS) and MYSQL_PASS!=nil and MYSQL_PASS!=""
       password_param = "-p#{MYSQL_PASS}"
     else
       password_param = ""
     end
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db[:Database]} | #{GZIP_CMD} -c > #{full_tmp_path}/#{db_filename}")
-    S3Object.store("mysqldb/#{timestamp}/#{db_filename}", open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
+    # Perform the mysqldump and compress the output to file
+    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}")
+    # Upload file to S3
+    S3Object.store(db_filename, open("#{full_tmp_path}/#{db_filename}"), S3_BUCKET)
   end
 end
 

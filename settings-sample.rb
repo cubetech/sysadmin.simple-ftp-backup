@@ -5,8 +5,14 @@ GZIP_CMD = '/bin/gzip'
 TAR_CMD = '/bin/tar'
 CP_CMD = '/bin/cp'
 
+# COMPRESSION
+#  * Defines the compression factor of gzip. Must be a digit from 1-9. Lower numbers provide
+#    less compression but are faster, and vice versa. The default compression level is 6
+#    (that is, biased towards high compression at expense of speed).
+GZIP_STRENGTH = 6
+
 # PATHS
-TMP_BACKUP_PATH = 'temp' # Will be created (and removed) inside the directory where the script is installed
+TMP_BACKUP_PATH = '/tmp' # Will be created as parent for a temp directory before uploading.
 
 # use SSL to transmit backups to S3 (a good idea)
 USE_SSL = true
@@ -19,9 +25,12 @@ AWS::S3::Base.establish_connection!(
 )
 
 # SPECIFY S3 BUCKET
+#  * Note: Must be globally unique. Will automatically be created if it does not exist.
 S3_BUCKET = 'my.unique.name'
 
 # SPECIFY HOW MANY DAYS OF ARCHIVES YOU WANT TO KEEP
+#  * Warning: The expiration is performed on *all* objects in the bucket.
+#             If you use this script on multiple servers, use separate buckets for each.
 DAYS_OF_ARCHIVES = 30
 
 # MYSQL CONFIG
@@ -47,12 +56,12 @@ MYSQL_PASS = 'XXXXX'
 #    in format: "name_for_backup" => "/actual/directory/name"
 #    Archive will be named in the format: dir-name_for_backup-200912010423.tgz
 #    where 200912010423 is the date/time when the script is run
-DIRECTORIES = {
-  "userhome" => "/home/user",
-  "apacheconfig" => "/etc/httpd"
-}
+# DIRECTORIES = {
+#   "userhome" => "/home/user",
+#   "apacheconfig" => "/etc/httpd"
+# }
 # You can set excludes in this array.
-DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
+# DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
 
 # SINGLE FILES CONFIG
 #  * Add hash pair for each grouping of single files you want to backup
