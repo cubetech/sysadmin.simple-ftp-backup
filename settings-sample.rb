@@ -13,6 +13,13 @@ GZIP_STRENGTH = 6
 
 # PATHS
 TMP_BACKUP_PATH = '/tmp' # Will be created as parent for a temp directory before uploading.
+MYSQLPATH = 'mysqldb'
+FILEPATH = 'archive'
+MONGOPATH = 'mongodb'
+
+# DATEPATHS
+#  * Defines if the script creates date path, for example 20130212-2217/mysqldb
+DATEPATH = true
 
 # use SSL to transmit backups to S3 (a good idea)
 USE_SSL = true
@@ -21,7 +28,7 @@ USE_SSL = true
 FTP_HOST = 'my.ftp.server'
 FTP_USER = 'username'
 FTP_PASS = 'password'
-FTP_BASEFOLDER = ''
+FTP_BASEPATH = ''
 
 # SPECIFY FTP FOLDER
 #  * Note: Must be globally unique. Will automatically be created if it does not exist.
@@ -61,6 +68,9 @@ MYSQL_PASS = 'XXXXX'
 # }
 # You can set excludes in this array.
 # DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
+
+# Set split sitze in megabytes
+SPLIT_SIZE = 4000
 
 # SINGLE FILES CONFIG
 #  * Add hash pair for each grouping of single files you want to backup
