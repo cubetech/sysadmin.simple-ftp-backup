@@ -17,16 +17,15 @@ TMP_BACKUP_PATH = '/tmp' # Will be created as parent for a temp directory before
 # use SSL to transmit backups to S3 (a good idea)
 USE_SSL = true
 
-# CREATE AWS/S3 CONNECTION
-AWS::S3::Base.establish_connection!(
-  :access_key_id  => '*** YOUR CREDENTIALS HERE ***',
-  :secret_access_key => '*** YOUR CREDENTIALS HERE ***',
-  :use_ssl => USE_SSL
-)
+# FTP CREDENTIALS
+FTP_HOST = 'my.ftp.server'
+FTP_USER = 'username'
+FTP_PASS = 'password'
+FTP_BASEFOLDER = ''
 
-# SPECIFY S3 BUCKET
+# SPECIFY FTP FOLDER
 #  * Note: Must be globally unique. Will automatically be created if it does not exist.
-S3_BUCKET = 'my.unique.name'
+FTP_FOLDER = 'my.unique.name'
 
 # SPECIFY HOW MANY DAYS OF ARCHIVES YOU WANT TO KEEP
 #  * Warning: The expiration is performed on *all* objects in the bucket.

@@ -1,22 +1,14 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    aws-s3 (0.6.3)
-      builder
-      mime-types
-      xml-simple
-    builder (3.1.4)
     fileutils (0.7)
       rmagick (>= 2.13.1)
-    mime-types (1.19)
     rmagick (2.13.1)
     sequel (3.40.0)
-    xml-simple (1.1.2)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  aws-s3
   fileutils
   sequel
