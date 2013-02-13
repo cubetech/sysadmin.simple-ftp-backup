@@ -6,12 +6,13 @@ A simple Ruby script to back up MySQL databases, MongoDB databases, full directo
 **Steps for using:**
 
 1. Set up your FTP server
-2. Install the gems via Bundler, or install the gems listed in Gemfile manually.
-3. Rename settings.rb.sample to settings.rb
-4. In settings.rb, fill in specific command paths, FTP credentials, MySQL login info & databases, and any directories you want backed up.  Just comment out the constants for backups you don't want to run.
-5. Set the script to run with cron - I have mine run every night, like so:
+2. Get the script: git clone https://github.com/cubetech/simple-ftp-backup.git
+3. Install the gems via Bundler, or install the gems listed in Gemfile manually.
+4. Rename settings.rb.sample to settings.rb
+5. In settings.rb, fill in specific command paths, FTP credentials, MySQL login info & databases, and any directories you want backed up.  Just comment out the constants for backups you don't want to run.
+6. Set the script to run with cron - I have mine run every night, like so:
 
-`15 3 * * * /usr/bin/ruby /home/username/backups/simple-ftp-backup.rb`
+`15 3 * * * /usr/local/simple-ftp-backup/simple-ftp-backup.rb`
 
 **To do:**
 
