@@ -37,8 +37,8 @@ end
 
 def ftp_open
   begin
-    ftp = Net::FTP.new(FTP_HOST)
-    ftp.login(FTP_USER, FTP_PASS)
+    ftp = Net::FTP.new(FTP_HOST, FTP_USER, FTP_PASS)
+    ftp.passive = FTP_PASSIVE
     return ftp
   end
 end

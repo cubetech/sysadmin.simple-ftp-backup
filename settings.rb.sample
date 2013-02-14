@@ -26,6 +26,7 @@ FTP_HOST = 'my.ftp.server'
 FTP_USER = 'username'
 FTP_PASS = 'password'
 FTP_BASEPATH = ''
+FTP_PASSIVE = true
 
 # SPECIFY FTP FOLDER
 #  * Note: Must be globally unique. Will automatically be created if it does not exist.
