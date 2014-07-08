@@ -53,7 +53,7 @@ end
 
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
-full_tmp_path = File.join(TMP_BACKUP_PATH, "simple-s3-backup-" << timestamp)
+full_tmp_path = File.join(TMP_BACKUP_PATH, "simple-ftp-backup-" << timestamp)
 if defined?(DATEPATH) and DATEPATH!=false
   basepath = "#{FTP_BASEPATH}/#{FTP_FOLDER}/#{timestamp}"
   clean_basepath = "/#{FTP_BASEPATH}/#{FTP_FOLDER}"
