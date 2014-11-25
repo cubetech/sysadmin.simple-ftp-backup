@@ -2,6 +2,19 @@ Simple FTP Backup
 ----------------
 
 A simple Ruby script to back up MySQL databases, MongoDB databases, full directories, and groups of single files to any FTP host.
+It's a "handsoff" script, the most is done for you.
+
+**Features**
+
+* Database backup (MySQL, MongoDB)
+* Directory backup
+* Subdirectories backup
+* File backup
+* Split files
+* Set compression rate
+* FTP error catching
+* Days of archive cleanup
+* Backups ordered in buckets and daily folders
 
 **Steps for using:**
 
@@ -16,4 +29,4 @@ A simple Ruby script to back up MySQL databases, MongoDB databases, full directo
 
 **To do:**
 
-1. Split daily archives into separate directories in the FTP server? Would be helpful for those with lots of files, and lots of days
+1. Improvements with the file structure
