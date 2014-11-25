@@ -136,7 +136,7 @@ end
 FTP_GROUND_PATH = ftp.pwd
 ftp.close
 
-print "\nConnected to FTP and selected bucket\n\n"
+puts "\nConnected to FTP and selected bucket\n"
 
 # Create tmp directory
 Dir.mkdirs full_tmp_path
@@ -179,7 +179,7 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
 
   end
 
-  puts "MySQL backup finished"
+  puts "\nMySQL backup finished\n"
 
 end
 
@@ -206,7 +206,7 @@ if defined?(MONGO_DBS)
 
   end
 
-  puts "MongoDB backup finished"
+  puts "\nMongoDB backup finished\n"
 
 end
 
@@ -276,7 +276,7 @@ if defined?(DIRECTORIES)
     
   end
 
-  puts "\nDirectories backup finished"
+  puts "\nDirectories backup finished\n"
 
 end
 
@@ -307,7 +307,7 @@ if defined?(SINGLE_FILES)
     
   end
 
-  puts "File backup finished"
+  puts "\nFile backup finished\n"
  
 end
 
@@ -331,11 +331,11 @@ list.each do |file|
   # Check if deletion is needed, if yes, delete
   if date < limit
     ftp_remove_all(ftp, "#{clean_basepath}/#{file}")
-    print "Old backup #{file} deleted.\n"
+    puts "Old backup #{file} deleted.\n"
   end
 end
 ftp_close(ftp)
 
-print "\nBackup finished.\n"
+puts "\nBackup finished.\n"
 
 exit
