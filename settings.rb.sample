@@ -58,8 +58,11 @@ MYSQL_PASS = 'XXXXX'
 # DIRECTORY BACKUP CONFIG
 #  * Add hash pair for each directory you want to backup
 #    in format: "name_for_backup" => "/actual/directory/name"
-#    Archive will be named in the format: dir-name_for_backup-200912010423.tgz
-#    where 200912010423 is the date/time when the script is run
+#    Archive will be named in the format: dir-name_for_backup.tgz
+#    and is placed in a subdir named 20141125-1100 (date/time)
+#  * Special hint:
+#    If the folder ends with an asterisk (/folder/to/backup/*) each
+#    subfolder got backuped in an own archive (Excluded the excludes)
 # DIRECTORIES = {
 #   "userhome" => "/home/user",
 #   "apacheconfig" => "/etc/httpd"

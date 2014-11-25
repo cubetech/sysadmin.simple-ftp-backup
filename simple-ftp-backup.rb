@@ -84,9 +84,10 @@ print "\nConnected to FTP and selected bucket\n\n"
 Dir.mkdirs full_tmp_path
 
 # Perform MySQL backup of all databases or specific ones
-if defined?(MYSQL_ALL or MYSQL_DBS)
+if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
 
   # Build an array of databases to backup
+  @databases = []
   if defined?(MYSQL_ALL)
     connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
     @databases = connection['show databases;'].collect { |db| db[:Database] }
@@ -95,7 +96,7 @@ if defined?(MYSQL_ALL or MYSQL_DBS)
   end
 
   # Fail if there are no databases to backup
-  raise "Error: There are no db's to backup." if @databases.empty?
+  puts "Error: There are no db's to backup." if @databases.empty?
 
   ftp = ftp_open
   ftp.chdir(path)
@@ -159,51 +160,113 @@ end
 
 # Perform directory backups
 if defined?(DIRECTORIES)
-  DIRECTORIES.each do |name, dir|
 
-    # Define file name
-    dir_filename = "dir-#{name}.tgz"
-
-    # Get excludes
-    excludes = ""
-    if defined?(DIRECTORIES_EXCLUDE)
-      DIRECTORIES_EXCLUDE.each do |de|
-        excludes += "--exclude=\"#{de}\" "
-      end
-    end
-
-    # Create archive
-    system("cd #{dir} && #{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} .")
-    
-    # Create file path on server if needed
-    ftp = ftp_open
-    ftp.chdir(path)
-    folderlist = ftp.list()
-    if !folderlist.any?{|dir| dir.match(/\s#{FILEPATH}$/)}
-      ftp.mkdir(FILEPATH)
-    end
-    path = ftp_close(ftp)
-
-    # Split and upload file to FTP
-    filesize = File.size("#{full_tmp_path}/#{dir_filename}").to_f / 1024000
-    if filesize > SPLIT_SIZE
-      system("split -d -b #{SPLIT_SIZE}m #{full_tmp_path}/#{dir_filename} #{full_tmp_path}/#{dir_filename}.")
-      system("rm -rf #{full_tmp_path}/#{dir_filename}")
-      Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
-        basename = File.basename(item)
-        ftp = ftp_open
-        ftp.chdir(path)
-        ftp.putbinaryfile("#{item}", "#{FILEPATH}/#{basename}")
-        path = ftp_close(ftp)
-      end
-    else
-      ftp = ftp_open
-      ftp.chdir(path)
-      ftp.putbinaryfile("#{full_tmp_path}/#{dir_filename}", "#{FILEPATH}/#{dir_filename}")
-      path = ftp_close(ftp)
-    end
+  # Create file path on server if needed
+  ftp = ftp_open
+  ftp.chdir(path)
+  folderlist = ftp.list()
+  if !folderlist.any?{|dir| dir.match(/\s#{FILEPATH}$/)}
+    ftp.mkdir(FILEPATH)
   end
-  print "Directories backup finished\n"
+  path = ftp_close(ftp)
+
+	# For each list entry do some backups...
+  DIRECTORIES.each do |name, dir|
+    
+    # Check if multiple subdirs backup
+		if dir.include? "*"
+			
+			# Set constant if not sets
+		  if (defined?(DIRECTORIES_EXCLUDE)).nil?
+			  DIRECTORIES_EXCLUDE = []
+			end
+			
+			# Go through each dir
+      Dir.glob("#{dir}").reject{|f| [DIRECTORIES_EXCLUDE].include? f}.each do |dirpath|
+
+				# Make tar gz name
+	      dirname = File.basename(dirpath)
+        dir_filename = "dir-#{name}-#{dirname}.tgz"
+
+        # Get excludes
+        excludes = ""
+        if defined?(DIRECTORIES_EXCLUDE)
+          DIRECTORIES_EXCLUDE.each do |de|
+            excludes += "--exclude=\"#{de}\" "
+          end
+        end
+        
+        # Hell yeah, make some tgz!!
+        system("cd #{dirpath} && #{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} .")
+        
+		    # Split and upload file to FTP
+		    filesize = File.size("#{full_tmp_path}/#{dir_filename}").to_f / 1024000
+		    filesize = filesize.round(2)
+		    
+		    if filesize > SPLIT_SIZE
+		      system("split -d -b #{SPLIT_SIZE}m #{full_tmp_path}/#{dir_filename} #{full_tmp_path}/#{dir_filename}.")
+		      system("rm -rf #{full_tmp_path}/#{dir_filename}")
+		      Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
+		        basename = File.basename(item)
+		        ftp = ftp_open
+		        ftp.chdir(path)
+		        ftp.putbinaryfile("#{item}", "#{FILEPATH}/#{basename}")
+		        path = ftp_close(ftp)
+		      end
+		    else
+		      ftp = ftp_open
+		      ftp.chdir(path)
+		      ftp.putbinaryfile("#{full_tmp_path}/#{dir_filename}", "#{FILEPATH}/#{dir_filename}")
+		      path = ftp_close(ftp)
+		    end
+		    
+		    puts "Archive #{dir_filename} uploaded (Size: #{filesize} MB)"
+
+      end
+
+    else
+
+      # Define file name
+      dir_filename = "dir-#{name}.tgz"
+    
+      # Get excludes
+      excludes = ""
+      if defined?(DIRECTORIES_EXCLUDE)
+        DIRECTORIES_EXCLUDE.each do |de|
+          excludes += "--exclude=\"#{de}\" "
+        end
+      end
+
+      # Create archive
+      system("cd #{dir} && #{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} .")
+      
+	    # Split and upload file to FTP
+	    filesize = File.size("#{full_tmp_path}/#{dir_filename}").to_f / 1024000
+	    filesize = filesize.round(2)
+		    
+	    if filesize > SPLIT_SIZE
+	      system("split -d -b #{SPLIT_SIZE}m #{full_tmp_path}/#{dir_filename} #{full_tmp_path}/#{dir_filename}.")
+	      system("rm -rf #{full_tmp_path}/#{dir_filename}")
+	      Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
+	        basename = File.basename(item)
+	        ftp = ftp_open
+	        ftp.chdir(path)
+	        ftp.putbinaryfile("#{item}", "#{FILEPATH}/#{basename}")
+	        path = ftp_close(ftp)
+	      end
+	    else
+	      ftp = ftp_open
+	      ftp.chdir(path)
+	      ftp.putbinaryfile("#{full_tmp_path}/#{dir_filename}", "#{FILEPATH}/#{dir_filename}")
+	      path = ftp_close(ftp)
+	    end
+
+	    puts "Archive #{dir_filename} uploaded (Size: #{filesize} MB)"
+
+    end
+    
+  end
+  puts "\nDirectories backup finished"
 end
 
 # Perform single files backups
