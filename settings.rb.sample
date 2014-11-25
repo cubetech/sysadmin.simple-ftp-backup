@@ -62,7 +62,8 @@ MYSQL_PASS = 'XXXXX'
 #    and is placed in a subdir named 20141125-1100 (date/time)
 #  * Special hint:
 #    If the folder ends with an asterisk (/folder/to/backup/*) each
-#    subfolder got backuped in an own archive (Excluded the excludes)
+#    subfolder and -file got backuped in an own archive (Excluded 
+#    the excludes)
 # DIRECTORIES = {
 #   "userhome" => "/home/user",
 #   "apacheconfig" => "/etc/httpd"

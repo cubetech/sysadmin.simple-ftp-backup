@@ -9,6 +9,12 @@ require 'rubygems'
 require 'sequel'
 require 'date'
 
+# Trapping the user
+trap "SIGINT" do
+  puts "\nExiting. ATTENTION: The backup is not finished!"
+  exit 130
+end
+
 # Function for creating recursive directories
 class Dir
   def self.mkdirs(p)
@@ -51,6 +57,51 @@ def ftp_close(ftp)
   end
 end
 
+def ftp_go_upload(path, file)
+
+	begin
+		
+		basename = File.basename(file)
+	
+		# Open FTP and check for path existing
+	  ftp = ftp_open
+	  ftp.chdir(FTP_GROUND_PATH)
+	  folderlist = ftp.list()
+	  if !folderlist.any?{|dir| dir.match(/\s#{path}$/)}
+	    ftp.mkdir(path)
+	  end
+	  ftp.chdir(path)
+	
+	  # Split and upload file to FTP
+	  filesize = File.size("#{file}").to_f / 1024000
+	  filesize = filesize.round(2)
+	  
+	  if filesize > SPLIT_SIZE
+	    system("split -d -b #{SPLIT_SIZE}m #{file} #{file}.")
+	    system("rm -rf #{file}")
+	    Dir.glob("#{file}.*") do |item|
+	      uploadname = File.basename(item)
+	      ftp.putbinaryfile("#{item}", "#{uploadname}")
+	    end
+	    texttag = " (splitted)"
+	  else
+	    ftp.putbinaryfile("#{file}", "#{basename}")
+	    texttag = ""
+	  end
+	  
+	  # Close ftp and return status
+	  ftp_close(ftp)
+	  puts "Archive #{basename} uploaded (Size: #{filesize} MB)#{texttag}"
+
+	rescue
+
+		# Rescue (hopefully...)
+		puts "ERROR: Archive #{basename} is not fully uploaded! (#{$!})"
+
+	end
+
+end
+
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
 full_tmp_path = File.join(TMP_BACKUP_PATH, "simple-ftp-backup-" << timestamp)
@@ -76,7 +127,8 @@ flist.each do |folder|
   ftp.mkdir(folder) if !folderlist.any?{|dir| dir.match(/\s#{folder}$/)}
   ftp.chdir(folder)
 end
-path = ftp_close(ftp)
+FTP_GROUND_PATH = ftp.pwd
+ftp.close
 
 print "\nConnected to FTP and selected bucket\n\n"
 
@@ -98,9 +150,6 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
   # Fail if there are no databases to backup
   puts "Error: There are no db's to backup." if @databases.empty?
 
-  ftp = ftp_open
-  ftp.chdir(path)
-
   @databases.each do |db|
 
     # Define file name
@@ -117,15 +166,15 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
     system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}")
 
     # Upload file to FTP
-    folderlist = ftp.list()
-    if !folderlist.any?{|dir| dir.match(/\s#{MYSQLPATH}$/)}
-      ftp.mkdir(MYSQLPATH)
-    end
-    ftp.putbinaryfile("#{full_tmp_path}/#{db_filename}", "#{MYSQLPATH}/#{db_filename}")
+    ftp_go_upload(MYSQLPATH, "#{full_tmp_path}/#{db_filename}")
+    
+		# Remove the file
+		system("rm -rf #{full_tmp_path}/#{db_filename}")
 
   end
-  path = ftp_close(ftp)
-  print "MySQL backup finished\n"
+
+  puts "MySQL backup finished"
+
 end
 
 
@@ -136,39 +185,27 @@ if defined?(MONGO_DBS)
   mdb_dump_dir = File.join(full_tmp_path, "mdbs")
   Dir.mkdirs(mdb_dump_dir)
 
-  ftp = ftp_open
-  ftp.chdir(path)
   # Create dumps and upload them to ftp
   MONGO_DBS.each do |mdb|
 
     # Create dump and archive
     mdb_filename = "mdb-#{mdb}.tgz"
-    system("#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && cd #{mdb_dump_dir}/#{mdb} && #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} .")
+    system("#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} .")
 
     # Upload file to FTP
-    folderlist = ftp.list()
-    if !folderlist.any?{|dir| dir.match(/\s#{MONGOPATH}$/)}
-      ftp.mkdir(MONGOPATH)
-    end
-    ftp.putbinaryfile("#{full_tmp_path}/#{mdb_filename}", "#{MONGOPATH}/#{mdb_filename}")
+    ftp_go_upload(MONGOPATH, "#{full_tmp_path}/#{mdb_filename}")
+
+		# Remove the file
+		system("rm -rf #{full_tmp_path}/#{mdb_filename}")
 
   end
-  path = ftp_close(ftp)
-  print "MongoDB backup finished\n"
-  system("rm -rf #{mdb_dump_dir}")
+
+  puts "MongoDB backup finished"
+
 end
 
 # Perform directory backups
 if defined?(DIRECTORIES)
-
-  # Create file path on server if needed
-  ftp = ftp_open
-  ftp.chdir(path)
-  folderlist = ftp.list()
-  if !folderlist.any?{|dir| dir.match(/\s#{FILEPATH}$/)}
-    ftp.mkdir(FILEPATH)
-  end
-  path = ftp_close(ftp)
 
 	# For each list entry do some backups...
   DIRECTORIES.each do |name, dir|
@@ -195,33 +232,16 @@ if defined?(DIRECTORIES)
             excludes += "--exclude=\"#{de}\" "
           end
         end
-        
-        # Hell yeah, make some tgz!!
-        system("cd #{dirpath} && #{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} .")
-        
-		    # Split and upload file to FTP
-		    filesize = File.size("#{full_tmp_path}/#{dir_filename}").to_f / 1024000
-		    filesize = filesize.round(2)
-		    
-		    if filesize > SPLIT_SIZE
-		      system("split -d -b #{SPLIT_SIZE}m #{full_tmp_path}/#{dir_filename} #{full_tmp_path}/#{dir_filename}.")
-		      system("rm -rf #{full_tmp_path}/#{dir_filename}")
-		      Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
-		        basename = File.basename(item)
-		        ftp = ftp_open
-		        ftp.chdir(path)
-		        ftp.putbinaryfile("#{item}", "#{FILEPATH}/#{basename}")
-		        path = ftp_close(ftp)
-		      end
-		    else
-		      ftp = ftp_open
-		      ftp.chdir(path)
-		      ftp.putbinaryfile("#{full_tmp_path}/#{dir_filename}", "#{FILEPATH}/#{dir_filename}")
-		      path = ftp_close(ftp)
-		    end
-		    
-		    puts "Archive #{dir_filename} uploaded (Size: #{filesize} MB)"
 
+        # Hell yeah, make some tgz!!
+        system("#{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} #{dirpath}")
+        
+				# Upload file to FTP
+        ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
+        
+				# Remove the file
+        system("rm -rf #{full_tmp_path}/#{dir_filename}")
+        
       end
 
     else
@@ -238,35 +258,20 @@ if defined?(DIRECTORIES)
       end
 
       # Create archive
-      system("cd #{dir} && #{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} .")
+      system("#{TAR_CMD} #{excludes} -czf #{full_tmp_path}/#{dir_filename} #{dir}")
       
-	    # Split and upload file to FTP
-	    filesize = File.size("#{full_tmp_path}/#{dir_filename}").to_f / 1024000
-	    filesize = filesize.round(2)
-		    
-	    if filesize > SPLIT_SIZE
-	      system("split -d -b #{SPLIT_SIZE}m #{full_tmp_path}/#{dir_filename} #{full_tmp_path}/#{dir_filename}.")
-	      system("rm -rf #{full_tmp_path}/#{dir_filename}")
-	      Dir.glob("#{full_tmp_path}/#{dir_filename}.*") do |item|
-	        basename = File.basename(item)
-	        ftp = ftp_open
-	        ftp.chdir(path)
-	        ftp.putbinaryfile("#{item}", "#{FILEPATH}/#{basename}")
-	        path = ftp_close(ftp)
-	      end
-	    else
-	      ftp = ftp_open
-	      ftp.chdir(path)
-	      ftp.putbinaryfile("#{full_tmp_path}/#{dir_filename}", "#{FILEPATH}/#{dir_filename}")
-	      path = ftp_close(ftp)
-	    end
+			# Upload file to FTP
+      ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
 
-	    puts "Archive #{dir_filename} uploaded (Size: #{filesize} MB)"
+			# Remove the file
+      system("rm -rf #{full_tmp_path}/#{dir_filename}")
 
     end
     
   end
+
   puts "\nDirectories backup finished"
+
 end
 
 # Perform single files backups
@@ -285,26 +290,19 @@ if defined?(SINGLE_FILES)
       system("cp #{file} #{files_tmp_path}")
     end
 
-    # Check if FTP dir exists
-    ftp = ftp_open
-    ftp.chdir(path)
-    folderlist = ftp.list()
-    if !folderlist.any?{|dir| dir.match(/\s#{FILEPATH}$/)}
-      ftp.mkdir(FILEPATH)
-    end
-    path = ftp_close(ftp)
-
-    # Create archive & copy to S3
+    # Create archive
     system("cd #{files_tmp_path} && #{TAR_CMD} -czf #{full_tmp_path}/#{files_filename} *")
-    ftp = ftp_open
-    ftp.chdir(path)
-    ftp.putbinaryfile("#{full_tmp_path}/#{files_filename}", "#{FILEPATH}/#{files_filename}")
-    path = ftp_close(ftp)
 
-    # Remove the temporary directory for the files
-    system("rm -rf #{files_tmp_path}")
+		# Upload file to FTP
+    ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{files_filename}")
+
+    # Remove the files
+    system("rm -rf #{files_tmp_path} && rm -rf #{full_tmp_path}/#{files_filename}")
+    
   end
-  print "File backup finished\n"
+
+  puts "File backup finished"
+ 
 end
 
 # Remove tmp directory
