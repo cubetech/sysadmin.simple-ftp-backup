@@ -169,7 +169,7 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
     end
 
     # Perform the mysqldump and compress the output to file
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}")
+    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}")
 
     # Upload file to FTP
     ftp_go_upload(MYSQLPATH, "#{full_tmp_path}/#{db_filename}")
