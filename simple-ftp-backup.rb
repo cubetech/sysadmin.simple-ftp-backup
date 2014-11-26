@@ -196,7 +196,7 @@ if defined?(MONGO_DBS)
 
     # Create dump and archive
     mdb_filename = "mdb-#{mdb}.tgz"
-    system("#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} .")
+    system("#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} .")
 
     # Upload file to FTP
     ftp_go_upload(MONGOPATH, "#{full_tmp_path}/#{mdb_filename}")
@@ -246,7 +246,7 @@ if defined?(DIRECTORIES)
         end
 
         # Hell yeah, make some tgz!!
-        system("#{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dirpath}")
+        system("env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dirpath}")
         
 				# Upload file to FTP
         ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
@@ -270,7 +270,7 @@ if defined?(DIRECTORIES)
       end
 
       # Create archive
-      system("#{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dir}")
+      system("env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dir}")
       
 			# Upload file to FTP
       ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
@@ -303,7 +303,7 @@ if defined?(SINGLE_FILES)
     end
 
     # Create archive
-    system("cd #{files_tmp_path} && #{TAR_CMD} -czf #{full_tmp_path}/#{files_filename} *")
+    system("cd #{files_tmp_path} && env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} -czf #{full_tmp_path}/#{files_filename} *")
 
 		# Upload file to FTP
     ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{files_filename}")

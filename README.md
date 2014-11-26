@@ -11,7 +11,7 @@ It's a "handsoff" script, the most is done for you.
 * Subdirectories backup
 * File backup
 * Split files
-* Set compression rate
+* Set compression rate (now on all backup types)
 * FTP error catching
 * Days of archive cleanup
 * Backups ordered in buckets and daily folders
