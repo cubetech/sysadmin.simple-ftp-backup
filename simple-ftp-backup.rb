@@ -365,14 +365,14 @@ if defined?(DIRECTORIES)
       end
 
       # Create archive
-      system("env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dir}")
-			Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
-		    while line = stderr.gets
-			    say(line)
-			    $errors += 1
-			    $dir_error = true
-				end
+      cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dir}"
+		Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+		while line = stderr.gets
+		    say(line)
+		    $errors += 1
+		    $dir_error = true
 			end
+		end
       
 			# Upload file to FTP
       ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
