@@ -3,23 +3,50 @@
 # Add local directory to LOAD_PATH
 $LOAD_PATH.unshift File.expand_path(File.dirname(__FILE__))
 
+# Define some variables
+$backupsize = 0
+$logmessage = ""
+$errors = 0
+$db_error = false
+$dir_error = false
+$file_error = false
+$ftp_error = false
+
+# Include some libs
 begin
 	require 'net/ftp'
+	require 'net/http'
+	require 'socket'
 	require 'settings'
 	require 'rubygems'
 	require 'sequel'
 	require 'date'
 	require 'filesize'
+	require 'base64'
+	require 'open3'
 rescue
-	puts "ERROR: Some includes are not found. Sure you have the gems installed?"
-	exit
+	say("ERROR: Some includes are not found. Sure you have the gems installed?")
+  $errors += 1
+  ping_dashboard(true)
+	exit 1
 end
 
 # Trapping the user
 trap "SIGINT" do
-  puts "\nExiting. ATTENTION: The backup is not finished!"
+  say("\nExiting. ATTENTION: The backup is not finished!")
+  $errors += 1
+  ping_dashboard(true)
   exit 130
 end
+
+# Monkey patch
+class Object
+	def to_sb
+		return 'false' if [FalseClass, NilClass].include?(self.class) 
+		return 'true' if self.class == TrueClass
+		self
+	end  
+end 
 
 # Function for creating recursive directories
 class Dir
@@ -42,7 +69,7 @@ def ftp_remove_all(ftp,file)
       ftp_remove_all(ftp,file + "/" + filename[filename.length-1])        
     end            
     ftp.rmdir(file)
-  rescue      
+  rescue
     ftp.delete(file)
   end     
 end
@@ -52,6 +79,12 @@ def ftp_open
     ftp = Net::FTP.new(FTP_HOST, FTP_USER, FTP_PASS)
     ftp.passive = FTP_PASSIVE
     return ftp
+  rescue
+  	say("ERROR: FTP connection failed: " + $!.to_s)
+		$errors += 1
+  	$ftp_error = true
+  	ping_dashboard()
+  	exit
   end
 end
 
@@ -80,6 +113,7 @@ def ftp_go_upload(path, file)
 	
 	  # Split and upload file to FTP
 	  baresize = File.size(file)
+	  $backupsize += baresize
 	  filesize = Filesize.from("#{baresize} B").pretty
 	  
 	  if (baresize/1024000) > SPLIT_SIZE
@@ -97,15 +131,46 @@ def ftp_go_upload(path, file)
 	  
 	  # Close ftp and return status
 	  ftp_close(ftp)
-	  puts "Archive #{basename} uploaded (Size: #{filesize})#{texttag}"
+	  say("Archive #{basename} uploaded (Size: #{filesize})#{texttag}")
 
 	rescue
 
 		# Rescue (hopefully...)
-		puts "ERROR: Archive #{basename} is not fully uploaded! (#{$!})"
+		say("ERROR: Archive #{basename} is not fully uploaded! (#{$!})")
+		$errors += 1
+		$ftp_error = true
 
 	end
 
+end
+
+def ping_dashboard(fatal_out = false)
+	
+	begin
+		
+		# Push to the dashboard if activated
+		if defined?(DASHBOARD) and DASHBOARD == true
+			errordata = "db:" + $db_error.to_sb + ",dir:" + $dir_error.to_sb + ",file:" + $file_error.to_sb + ",ftp:" + $ftp_error.to_sb
+			if fatal_out == true
+				errordata = "fatal:true"
+			end
+			url = URI.parse(DASHBOARD_URL)
+			Net::HTTP::post_form url, { "server" => Socket.gethostname, "bucket" => FTP_FOLDER, "size" => $backupsize.to_s, "errors" => $errors.to_s, "output" => Base64.encode64($logmessage), "errordata" => errordata }
+		end
+
+	end
+	
+end
+
+def say(message)
+	
+	begin
+
+		puts message
+		$logmessage += message
+		
+	end
+	
 end
 
 # Initial setup
@@ -136,7 +201,7 @@ end
 FTP_GROUND_PATH = ftp.pwd
 ftp.close
 
-puts "\nConnected to FTP and selected bucket\n"
+say("\nConnected to FTP and selected bucket\n")
 
 # Create tmp directory
 Dir.mkdirs full_tmp_path
@@ -154,7 +219,11 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
   end
 
   # Fail if there are no databases to backup
-  puts "Error: There are no db's to backup." if @databases.empty?
+  if @databases.empty?
+		say("Error: There are no db's to backup.")
+		$errors += 1
+    $db_error = true
+  end
 
   @databases.each do |db|
 
@@ -169,17 +238,24 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
     end
 
     # Perform the mysqldump and compress the output to file
-    system("#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}")
+    cmd = "#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}"
+    Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+	    while line = stderr.gets
+		    say(line)
+		    $errors += 1
+		    $db_error = true
+			end
+		end
 
     # Upload file to FTP
     ftp_go_upload(MYSQLPATH, "#{full_tmp_path}/#{db_filename}")
-    
+	    
 		# Remove the file
 		system("rm -rf #{full_tmp_path}/#{db_filename}")
 
   end
 
-  puts "\nMySQL backup finished\n"
+  say("\nMySQL backup finished\n")
 
 end
 
@@ -196,17 +272,24 @@ if defined?(MONGO_DBS)
 
     # Create dump and archive
     mdb_filename = "mdb-#{mdb}.tgz"
-    system("#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} .")
+    cmd = "#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} -czf #{full_tmp_path}/#{mdb_filename} ."
+    Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+	    while line = stderr.gets
+		    say(line)
+		    $errors += 1
+		    $db_error = true
+			end
+		end
 
     # Upload file to FTP
     ftp_go_upload(MONGOPATH, "#{full_tmp_path}/#{mdb_filename}")
 
-		# Remove the file
-		system("rm -rf #{full_tmp_path}/#{mdb_filename}")
+	# Remove the file
+	system("rm -rf #{full_tmp_path}/#{mdb_filename}")
 
   end
 
-  puts "\nMongoDB backup finished\n"
+  say("\nMongoDB backup finished\n")
 
 end
 
@@ -251,15 +334,22 @@ if defined?(DIRECTORIES)
         end
 
         # Hell yeah, make some tgz!!
-        system("env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dirpath}")
+        cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dirpath}"
+		    Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+			    while line = stderr.gets
+				    say(line)
+				    $errors += 1
+				    $dir_error = true
+					end
+				end
         
 				# Upload file to FTP
-        ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
-        
+	      ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
+	      
 				# Remove the file
-        system("rm -rf #{full_tmp_path}/#{dir_filename}")
-        
-      end
+	      system("rm -rf #{full_tmp_path}/#{dir_filename}")
+	        
+	    end
 
     else
 
@@ -276,6 +366,13 @@ if defined?(DIRECTORIES)
 
       # Create archive
       system("env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dir}")
+			Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+		    while line = stderr.gets
+			    say(line)
+			    $errors += 1
+			    $dir_error = true
+				end
+			end
       
 			# Upload file to FTP
       ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
@@ -287,7 +384,7 @@ if defined?(DIRECTORIES)
     
   end
 
-  puts "\nDirectories backup finished\n"
+  say("\nDirectories backup finished\n")
 
 end
 
@@ -308,7 +405,14 @@ if defined?(SINGLE_FILES)
     end
 
     # Create archive
-    system("cd #{files_tmp_path} && env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} -czf #{full_tmp_path}/#{files_filename} *")
+    cmd = "cd #{files_tmp_path} && env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} -czf #{full_tmp_path}/#{files_filename} *"
+		Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+	    while line = stderr.gets
+		    say(line)
+		    $errors += 1
+		    $file_error = true
+			end
+		end
 
 		# Upload file to FTP
     ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{files_filename}")
@@ -318,7 +422,7 @@ if defined?(SINGLE_FILES)
     
   end
 
-  puts "\nFile backup finished\n"
+  say("\nFile backup finished\n")
  
 end
 
@@ -342,11 +446,13 @@ list.each do |file|
   # Check if deletion is needed, if yes, delete
   if date < limit
     ftp_remove_all(ftp, "#{clean_basepath}/#{file}")
-    puts "Old backup #{file} deleted.\n"
+    say("Old backup #{file} deleted.\n")
   end
 end
 ftp_close(ftp)
 
-puts "\nBackup finished.\n"
+say("\nBackup finished.\n")
+
+ping_dashboard()
 
 exit

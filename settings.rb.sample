@@ -91,3 +91,8 @@ SPLIT_SIZE = 4000
 #   'important_configs' => ['/etc/hosts', '/etc/my.cnf'],
 #   'other_configs' => ['/etc/syslog.conf', '/etc/smb.conf']
 # }
+
+# DASHBOARD CONFIG
+#  * You can push your data to our backup dashboard.
+# DASHBOARD = true
+# DASHBOARD_URL = "http://backup.example.com/api.php"
