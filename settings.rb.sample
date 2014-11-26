@@ -64,12 +64,15 @@ MYSQL_PASS = 'XXXXX'
 #    If the folder ends with an asterisk (/folder/to/backup/*) each
 #    subfolder and -file got backuped in an own archive (Excluded 
 #    the excludes)
+#  * Symlink option: If true, the backup includes the target files of
+#    symlinks, not only the symlinks
 # DIRECTORIES = {
 #   "userhome" => "/home/user",
 #   "apacheconfig" => "/etc/httpd"
 # }
 # You can set excludes in this array.
 # DIRECTORIES_EXCLUDE = ['*.old', '*zopectl']
+# SYMLINKS = true
 
 # Set split sitze in megabytes
 SPLIT_SIZE = 4000
