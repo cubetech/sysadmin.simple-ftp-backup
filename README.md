@@ -15,6 +15,7 @@ It's a "handsoff" script, the most is done for you.
 * FTP error catching
 * Days of archive cleanup
 * Backups ordered in buckets and daily folders
+* Archives symlinks as file or the target files
 
 **Steps for using:**
 
