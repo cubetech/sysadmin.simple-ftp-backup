@@ -219,6 +219,11 @@ if defined?(DIRECTORIES)
 		tarswitch = "h"
 	end
 
+	# Add ignore failed read option
+	if defined?(IGNORE_FAILED_READS) and IGNORE_FAILED_READS == true
+		tarswitch += " --ignore-failed-read"
+	end
+
 	# For each list entry do some backups...
   DIRECTORIES.each do |name, dir|
     

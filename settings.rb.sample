@@ -11,6 +11,11 @@ CP_CMD = '/bin/cp'
 #    (that is, biased towards high compression at expense of speed).
 GZIP_STRENGTH = 6
 
+# PACKAGING
+#  * Defines if at directory backup failed reads should ignored. Not implemented in file
+#    backup, because failed reads there is a problem.
+IGNORE_FAILED_READS = true
+
 # PATHS
 TMP_BACKUP_PATH = '/tmp' # Will be created as parent for a temp directory before uploading.
 MYSQLPATH = 'mysqldb'
