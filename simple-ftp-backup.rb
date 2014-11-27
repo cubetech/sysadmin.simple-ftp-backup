@@ -24,7 +24,7 @@ begin
 	require 'filesize'
 	require 'base64'
 	require 'open3'
-rescue
+catch
 	say("ERROR: Some includes are not found. Sure you have the gems installed?")
   $errors += 1
   ping_dashboard(true)
@@ -212,8 +212,14 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
   # Build an array of databases to backup
   @databases = []
   if defined?(MYSQL_ALL)
-    connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
-    @databases = connection['show databases;'].collect { |db| db[:Database] }
+	  begin
+	  	connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
+	  	@databases = connection['show databases;'].collect { |db| db[:Database] }
+	  catch
+	  	say('ERROR: MySQL connection not successful: ' + $!)
+	  	$errors += 1
+	  	ping_dashboard(true)
+	  end
   elsif defined?(MYSQL_DBS)
     @databases = MYSQL_DBS
   end
