@@ -12,18 +12,60 @@ $dir_error = false
 $file_error = false
 $ftp_error = false
 
-# Include some libs
+# Include some standard libs
+require 'net/ftp'
+require 'net/http'
+require 'socket'
+require 'settings'
+require 'rubygems'
+require 'date'
+require 'base64'
+require 'open3'
+
+# Monkey patch
+class Object
+	def to_sb
+		return 'false' if [FalseClass, NilClass].include?(self.class) 
+		return 'true' if self.class == TrueClass
+		self
+	end  
+end 
+
+# Dashboard ping
+def ping_dashboard(fatal_out = false)
+	
+	begin
+		
+		# Push to the dashboard if activated
+		if defined?(DASHBOARD) and DASHBOARD == true
+			errordata = "db:" + $db_error.to_sb + ",dir:" + $dir_error.to_sb + ",file:" + $file_error.to_sb + ",ftp:" + $ftp_error.to_sb
+			if fatal_out == true
+				errordata = "fatal:true"
+			end
+			url = URI.parse(DASHBOARD_URL)
+			Net::HTTP::post_form url, { "server" => Socket.gethostname, "bucket" => FTP_FOLDER, "size" => $backupsize.to_s, "errors" => $errors.to_s, "output" => Base64.encode64($logmessage), "errordata" => errordata }
+		end
+
+	end
+	
+end
+
+# Some puts enhancement
+def say(message)
+	
+	begin
+
+		puts message
+		$logmessage += message.to_s
+		
+	end
+	
+end
+
+# Include additional libs
 begin
-	require 'net/ftp'
-	require 'net/http'
-	require 'socket'
-	require 'settings'
-	require 'rubygems'
 	require 'sequel'
-	require 'date'
 	require 'filesize'
-	require 'base64'
-	require 'open3'
 rescue Exception => e
 	say("ERROR: Some includes are not found. Sure you have the gems installed?")
   $errors += 1
@@ -38,15 +80,6 @@ trap "SIGINT" do
   ping_dashboard(true)
   exit 130
 end
-
-# Monkey patch
-class Object
-	def to_sb
-		return 'false' if [FalseClass, NilClass].include?(self.class) 
-		return 'true' if self.class == TrueClass
-		self
-	end  
-end 
 
 # Function for creating recursive directories
 class Dir
@@ -144,35 +177,6 @@ def ftp_go_upload(path, file)
 
 end
 
-def ping_dashboard(fatal_out = false)
-	
-	begin
-		
-		# Push to the dashboard if activated
-		if defined?(DASHBOARD) and DASHBOARD == true
-			errordata = "db:" + $db_error.to_sb + ",dir:" + $dir_error.to_sb + ",file:" + $file_error.to_sb + ",ftp:" + $ftp_error.to_sb
-			if fatal_out == true
-				errordata = "fatal:true"
-			end
-			url = URI.parse(DASHBOARD_URL)
-			Net::HTTP::post_form url, { "server" => Socket.gethostname, "bucket" => FTP_FOLDER, "size" => $backupsize.to_s, "errors" => $errors.to_s, "output" => Base64.encode64($logmessage), "errordata" => errordata }
-		end
-
-	end
-	
-end
-
-def say(message)
-	
-	begin
-
-		puts message
-		$logmessage += message
-		
-	end
-	
-end
-
 # Initial setup
 timestamp = Time.now.strftime("%Y%m%d-%H%M")
 full_tmp_path = File.join(TMP_BACKUP_PATH, "simple-ftp-backup-" << timestamp)
@@ -216,9 +220,11 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
 	  	connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
 	  	@databases = connection['show databases;'].collect { |db| db[:Database] }
 	  rescue Exception => e
-	  	say('ERROR: MySQL connection not successful: ' + e)
+	  	say('ERROR: MySQL connection not successful: ')
+	  	say($!)
 	  	$errors += 1
 	  	ping_dashboard(true)
+	  	exit 1
 	  end
   elsif defined?(MYSQL_DBS)
     @databases = MYSQL_DBS
