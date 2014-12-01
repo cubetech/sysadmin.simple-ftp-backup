@@ -208,7 +208,15 @@ ftp.close
 say("\nConnected to FTP and selected bucket\n")
 
 # Create tmp directory
-Dir.mkdirs full_tmp_path
+begin
+	Dir.mkdirs full_tmp_path
+	say('Created temporary path: ' + full_tmp_path)
+rescue
+	say('Could not create temporary directory: ' + $!)
+	$errors += 1
+	ping_dashboard(true)
+	exit 1
+end
 
 # Perform MySQL backup of all databases or specific ones
 if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
@@ -311,7 +319,7 @@ if defined?(DIRECTORIES)
 	# Add symlink tar switch
 	tarswitch = ""
 	if defined?(SYMLINKS) and SYMLINKS == true
-		tarswitch = "h"
+		tarswitch += " --dereference"
 	end
 
 	# Add ignore failed read option
@@ -346,7 +354,8 @@ if defined?(DIRECTORIES)
         end
 
         # Hell yeah, make some tgz!!
-        cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dirpath}"
+        cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dirpath}"
+	say(cmd)
 		    Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 			    while line = stderr.gets
 				    say(line)
@@ -377,7 +386,7 @@ if defined?(DIRECTORIES)
       end
 
       # Create archive
-      cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{excludes} -czPf#{tarswitch} #{full_tmp_path}/#{dir_filename} #{dir}"
+      cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dir}"
 		Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 		while line = stderr.gets
 		    say(line)
