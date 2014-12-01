@@ -355,7 +355,6 @@ if defined?(DIRECTORIES)
 
         # Hell yeah, make some tgz!!
         cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dirpath}"
-	say(cmd)
 		    Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 			    while line = stderr.gets
 				    say(line)
