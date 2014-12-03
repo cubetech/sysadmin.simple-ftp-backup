@@ -315,96 +315,96 @@ end
 
 # Perform directory backups
 if defined?(DIRECTORIES)
-	
+
 	# Add symlink tar switch
 	tarswitch = ""
 	if defined?(SYMLINKS) and SYMLINKS == true
 		tarswitch += " --dereference"
 	end
-
+	
 	# Add ignore failed read option
 	if defined?(IGNORE_FAILED_READS) and IGNORE_FAILED_READS == true
 		tarswitch += " --ignore-failed-read"
 	end
-
+	
 	# For each list entry do some backups...
-  DIRECTORIES.each do |name, dir|
-    
-    # Check if multiple subdirs backup
+	DIRECTORIES.each do |name, dir|
+	
+		# Check if multiple subdirs backup
 		if dir.include? "*"
-			
+		
 			# Set constant if not sets
-		  if (defined?(DIRECTORIES_EXCLUDE)).nil?
-			  DIRECTORIES_EXCLUDE = []
+			if (defined?(DIRECTORIES_EXCLUDE)).nil?
+				DIRECTORIES_EXCLUDE = []
 			end
 			
 			# Go through each dir
-      Dir.glob("#{dir}").reject{|f| [DIRECTORIES_EXCLUDE].include? f}.each do |dirpath|
-
+			Dir.glob("#{dir}").each do |dirpath|
+			
 				# Make tar gz name
-	      dirname = File.basename(dirpath)
-        dir_filename = "dir-#{name}-#{dirname}.tgz"
-
-        # Get excludes
-        excludes = ""
-        if defined?(DIRECTORIES_EXCLUDE)
-          DIRECTORIES_EXCLUDE.each do |de|
-            excludes += "--exclude=\"#{de}\" "
-          end
-        end
-
-        # Hell yeah, make some tgz!!
-        cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dirpath}"
-		    Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
-			    while line = stderr.gets
-				    say(line)
-				    $errors += 1
-				    $dir_error = true
+				dirname = File.basename(dirpath)
+				dir_filename = "dir-#{name}-#{dirname}.tgz"
+				
+				# Get excludes
+				excludes = ""
+				if defined?(DIRECTORIES_EXCLUDE)
+					DIRECTORIES_EXCLUDE.each do |de|
+						excludes += "--exclude=\"#{de}\" "
 					end
 				end
-        
+				
+				# Hell yeah, make some tgz!!
+				cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dirpath}"
+				Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+					while line = stderr.gets
+						say(line)
+						$errors += 1
+						$dir_error = true
+					end
+				end
+				
 				# Upload file to FTP
-	      ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
-	      
+				ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
+				
 				# Remove the file
-	      system("rm -rf #{full_tmp_path}/#{dir_filename}")
-	        
-	    end
-
-    else
-
-      # Define file name
-      dir_filename = "dir-#{name}.tgz"
-    
-      # Get excludes
-      excludes = ""
-      if defined?(DIRECTORIES_EXCLUDE)
-        DIRECTORIES_EXCLUDE.each do |de|
-          excludes += "--exclude=\"#{de}\" "
-        end
-      end
-
-      # Create archive
-      cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dir}"
-		Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
-		while line = stderr.gets
-		    say(line)
-		    $errors += 1
-		    $dir_error = true
+				system("rm -rf #{full_tmp_path}/#{dir_filename}")
+			
 			end
-		end
-      
+		
+		else
+		
+		# Define file name
+			dir_filename = "dir-#{name}.tgz"
+			
+			# Get excludes
+			excludes = ""
+			if defined?(DIRECTORIES_EXCLUDE)
+				DIRECTORIES_EXCLUDE.each do |de|
+					excludes += "--exclude=\"#{de}\" "
+				end
+			end
+			
+			# Create archive
+			cmd = "env GZIP=-#{GZIP_STRENGTH} #{TAR_CMD} #{tarswitch} #{excludes} -czPf #{full_tmp_path}/#{dir_filename} #{dir}"
+			Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+				while line = stderr.gets
+					say(line)
+					$errors += 1
+					$dir_error = true
+				end
+			end
+			
 			# Upload file to FTP
-      ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
-
+			ftp_go_upload(FILEPATH, "#{full_tmp_path}/#{dir_filename}")
+			
 			# Remove the file
-      system("rm -rf #{full_tmp_path}/#{dir_filename}")
-
-    end
-    
-  end
-
-  say("\nDirectories backup finished\n")
+			system("rm -rf #{full_tmp_path}/#{dir_filename}")
+		
+		end
+	
+	end
+	
+	say("\nDirectories backup finished\n")
 
 end
 
