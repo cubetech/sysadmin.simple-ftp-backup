@@ -258,7 +258,7 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
     end
 
     # Perform the mysqldump and compress the output to file
-    cmd = "#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}"
+    cmd = "#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --skip-events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}"
     Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 	    while line = stderr.gets
 		    say(line)
