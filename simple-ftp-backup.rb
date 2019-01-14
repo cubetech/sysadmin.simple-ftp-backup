@@ -225,7 +225,7 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
   @databases = []
   if defined?(MYSQL_ALL)
 	  begin
-	  	connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
+	  	connection = Sequel.mysql2 nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
 	  	@databases = connection['show databases;'].collect { |db| db[:Database] }
 	  rescue Exception => e
 	  	say('ERROR: MySQL connection not successful: ')
