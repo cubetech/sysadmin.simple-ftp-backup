@@ -469,7 +469,7 @@ list.each do |file|
     say("Old backup #{file} deleted.\n")
   end
 end
-ftp_close(ftp)
+ftp.close
 
 say("\nBackup finished.\n")
 
