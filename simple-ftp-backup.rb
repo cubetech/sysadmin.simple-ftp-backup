@@ -292,7 +292,7 @@ if defined?(MONGO_DBS)
 
     # Create dump and archive
     mdb_filename = "mdb-#{mdb}.tgz"
-    cmd = "#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && #{TAR_CMD} #{tarswitch} #{excludes} -cPf . | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
+    cmd = "#{MONGODUMP_CMD} -h #{MONGO_HOST} -d #{mdb} -o #{mdb_dump_dir} && #{TAR_CMD} #{tarswitch} #{excludes} -cPf - . | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
     Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 	    while line = stderr.gets
 		    say(line)
@@ -354,7 +354,7 @@ if defined?(DIRECTORIES)
 				end
 				
 				# Hell yeah, make some tgz!!
-				cmd = "#{TAR_CMD} #{tarswitch} #{excludes} -cPf #{dirpath} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
+				cmd = "#{TAR_CMD} #{tarswitch} #{excludes} -cPf - #{dirpath} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
 				Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 					while line = stderr.gets
 						say(line)
@@ -385,7 +385,7 @@ if defined?(DIRECTORIES)
 			end
 			
 			# Create archive
-			cmd = "#{TAR_CMD} #{tarswitch} #{excludes} -cPf #{dir} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
+			cmd = "#{TAR_CMD} #{tarswitch} #{excludes} -cPf - #{dir} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
 			Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 				while line = stderr.gets
 					say(line)
@@ -425,7 +425,7 @@ if defined?(SINGLE_FILES)
     end
 
     # Create archive
-    cmd = "cd #{files_tmp_path} && #{TAR_CMD} #{tarswitch} #{excludes} -cPf * | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
+    cmd = "cd #{files_tmp_path} && #{TAR_CMD} #{tarswitch} #{excludes} -cPf - * | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{dir_filename}"
 		Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 	    while line = stderr.gets
 		    say(line)
