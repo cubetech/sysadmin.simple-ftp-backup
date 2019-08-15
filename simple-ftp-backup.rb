@@ -14,7 +14,7 @@ $ftp_error = false
 
 # Include some standard libs
 require 'net/ftp'
-require 'net/http'
+require 'net/https'
 require 'socket'
 require 'settings'
 require 'rubygems'
@@ -42,8 +42,21 @@ def ping_dashboard(fatal_out = false)
 			if fatal_out == true
 				errordata = "fatal:true"
 			end
-			url = URI.parse(DASHBOARD_URL)
-			Net::HTTP::post_form url, { "server" => Socket.gethostname, "bucket" => FTP_FOLDER, "size" => $backupsize.to_s, "errors" => $errors.to_s, "output" => Base64.encode64($logmessage), "errordata" => errordata }
+			uri = URI.parse(DASHBOARD_URL)
+			request_params = {
+				"server" => Socket.gethostname,
+				"bucket" => FTP_FOLDER,
+				"size" => $backupsize.to_s,
+				"errors" => $errors.to_s,
+				"output" => Base64.encode64($logmessage),
+				"errordata" => errordata
+			}
+			http = Net::HTTP.new(uri.host, uri.port)
+			http.use_ssl = true
+			http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+			request = Net::HTTP::Post.new(uri.path)
+			request.set_form_data(request_params)
+			response = http.request(request)
 		end
 
 	end
@@ -225,7 +238,7 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
   @databases = []
   if defined?(MYSQL_ALL)
 	  begin
-	  	connection = Sequel.mysql2 nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
+	  	connection = Sequel.mysql nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
 	  	@databases = connection['show databases;'].collect { |db| db[:Database] }
 	  rescue Exception => e
 	  	say('ERROR: MySQL connection not successful: ')
@@ -258,7 +271,7 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
     end
 
     # Perform the mysqldump and compress the output to file
-    cmd = "#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --skip-events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}"
+    cmd = "#{MYSQLDUMP_CMD} -u #{MYSQL_USER} #{password_param} --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --events --quick #{db} | #{GZIP_CMD} -#{GZIP_STRENGTH} -c > #{full_tmp_path}/#{db_filename}"
     Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
 	    while line = stderr.gets
 		    say(line)
