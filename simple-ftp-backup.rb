@@ -240,6 +240,9 @@ if defined?(MYSQL_ALL) or defined?(MYSQL_DBS)
 	  begin
 	  	connection = Sequel.mysql2 nil, :user => MYSQL_USER, :password => MYSQL_PASS, :host => 'localhost', :encoding => 'utf8'
 	  	@databases = connection['show databases;'].collect { |db| db[:Database] }
+		@databases.delete('performance_schema')
+		@databases.delete('information_schema')
+		@databases.delete('mysql')
 	  rescue Exception => e
 	  	say('ERROR: MySQL connection not successful: ')
 	  	say($!)
