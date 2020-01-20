@@ -330,7 +330,7 @@ if defined?(MONGO_DBS)
 end
 
 # Perform directory backups
-if defined?(DIRECTORIES)
+if defined?(DIRECTORIES) and !defined?(ARGV[0])
 
 	# Add symlink tar switch
 	tarswitch = ""
